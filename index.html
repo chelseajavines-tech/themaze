@@ -3,139 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Maze Game</title>
+  <title>Tic Tac Toe</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Maze Game</h1>
-  <p>Use arrow keys or WASD to move.</p>
-
-  <canvas id="mazeCanvas" width="520" height="520"></canvas>
+  <h1>Tic Tac Toe</h1>
+  <div id="game"></div>
+  <button id="reset">Reset Game</button>
 
   <script src="game.js"></script>
 
-  const canvas = document.getElementById("mazeCanvas");
-const ctx = canvas.getContext("2d");
-
-const rows = 20;
-const cols = 20;
-const cellSize = 25;
-
-let maze = [];
-let player = { x: 0, y: 0 };
-let goal = { x: cols - 1, y: rows - 1 };
-
-// Create 2D array
-for (let y = 0; y < rows; y++) {
-  maze[y] = [];
-  for (let x = 0; x < cols; x++) {
-    maze[y][x] = { visited: false, walls: [true, true, true, true] };
-  }
+  body {
+  background: #222;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
 }
 
-// Maze generation using DFS
-function carve(x, y) {
-  maze[y][x].visited = true;
+#game {
+  margin: 20px auto;
+  display: grid;
+  grid-template-columns: repeat(3, 120px);
+  grid-template-rows: repeat(3, 120px);
+  gap: 5px;
+}
 
-  const directions = [
-    [0, -1, 0],  // up
-    [1, 0, 1],   // right
-    [0, 1, 2],   // down
-    [-1, 0, 3]   // left
+.cell {
+  background: #333;
+  border: 2px solid #555;
+  font-size: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cell:hover {
+  background: #444;
+}
+
+#reset {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 18px;
+}
+
+const game = document.getElementById("game");
+const resetBtn = document.getElementById("reset");
+
+let board = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let gameOver = false;
+
+// Create the board
+function createBoard() {
+  game.innerHTML = "";
+  board.forEach((cell, index) => {
+    const div = document.createElement("div");
+    div.classList.add("cell");
+    div.dataset.index = index;
+    div.innerText = cell;
+    div.addEventListener("click", handleMove);
+    game.appendChild(div);
+  });
+}
+
+// Handle moves
+function handleMove(e) {
+  const index = e.target.dataset.index;
+
+  if (board[index] !== "" || gameOver) return;
+
+  board[index] = currentPlayer;
+  e.target.innerText = currentPlayer;
+
+  if (checkWin()) {
+    alert(currentPlayer + " wins!");
+    gameOver = true;
+    return;
+  }
+  if (!board.includes("")) {
+    alert("It's a draw!");
+    gameOver = true;
+    return;
+  }
+
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+}
+
+// Check for a winner
+function checkWin() {
+  const winPatterns = [
+    [0,1,2], [3,4,5], [6,7,8], // rows
+    [0,3,6], [1,4,7], [2,5,8], // cols
+    [0,4,8], [2,4,6]           // diagonals
   ];
 
-  shuffle(directions);
-
-  for (let [dx, dy, wall] of directions) {
-    const nx = x + dx;
-    const ny = y + dy;
-
-    if (ny >= 0 && ny < rows && nx >= 0 && nx < cols && !maze[ny][nx].visited) {
-      // Remove walls between cells
-      maze[y][x].walls[wall] = false;
-      maze[ny][nx].walls[(wall + 2) % 4] = false;
-      carve(nx, ny);
-    }
-  }
+  return winPatterns.some(pattern =>
+    pattern.every(i => board[i] === currentPlayer)
+  );
 }
 
-// Shuffle array
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-carve(0, 0);
-
-// Draw Maze
-function drawMaze() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "white";
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const cell = maze[y][x];
-      const px = x * cellSize;
-      const py = y * cellSize;
-
-      if (cell.walls[0]) ctx.strokeRect(px, py, cellSize, 1);
-      if (cell.walls[1]) ctx.strokeRect(px + cellSize, py, 1, cellSize);
-      if (cell.walls[2]) ctx.strokeRect(px, py + cellSize, cellSize, 1);
-      if (cell.walls[3]) ctx.strokeRect(px, py, 1, cellSize);
-    }
-  }
-
-  // Player
-  ctx.fillStyle = "yellow";
-  ctx.fillRect(player.x * cellSize + 4, player.y * cellSize + 4, cellSize - 8, cellSize - 8);
-
-  // Goal
-  ctx.fillStyle = "lime";
-  ctx.fillRect(goal.x * cellSize + 6, goal.y * cellSize + 6, cellSize - 12, cellSize - 12);
-}
-
-function canMove(x, y, dx, dy) {
-  const cell = maze[y][x];
-
-  if (dx === 0 && dy === -1 && !cell.walls[0]) return true;
-  if (dx === 1 && dy === 0 && !cell.walls[1]) return true;
-  if (dx === 0 && dy === 1 && !cell.walls[2]) return true;
-  if (dx === -1 && dy === 0 && !cell.walls[3]) return true;
-
-  return false;
-}
-
-function move(dx, dy) {
-  if (canMove(player.x, player.y, dx, dy)) {
-    player.x += dx;
-    player.y += dy;
-    drawMaze();
-    checkWin();
-  }
-}
-
-function checkWin() {
-  if (player.x === goal.x && player.y === goal.y) {
-    setTimeout(() => {
-      alert("🎉 You win! Reloading maze...");
-      window.location.reload();
-    }, 100);
-  }
-}
-
-// Controls
-document.addEventListener("keydown", (e) => {
-  if (["ArrowUp", "w"].includes(e.key)) move(0, -1);
-  if (["ArrowRight", "d"].includes(e.key)) move(1, 0);
-  if (["ArrowDown", "s"].includes(e.key)) move(0, 1);
-  if (["ArrowLeft", "a"].includes(e.key)) move(-1, 0);
+resetBtn.addEventListener("click", () => {
+  board = ["","","","","","","","",""];
+  currentPlayer = "X";
+  gameOver = false;
+  createBoard();
 });
 
-drawMaze();
+// Start game
+createBoard();
 
-</body>
-</html>
-
+  
 
