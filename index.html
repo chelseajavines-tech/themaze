@@ -3,117 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe</title>
+  <title>Ping Pong</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Tic Tac Toe</h1>
-  <div id="game"></div>
-  <button id="reset">Reset Game</button>
-
+  <h1>Ping Pong</h1>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
   <script src="game.js"></script>
 
   body {
-  background: #222;
+  background: #111;
   color: #fff;
-  font-family: Arial, sans-serif;
   text-align: center;
+  font-family: Arial, sans-serif;
 }
 
-#game {
+canvas {
+  background: #000;
+  display: block;
   margin: 20px auto;
-  display: grid;
-  grid-template-columns: repeat(3, 120px);
-  grid-template-rows: repeat(3, 120px);
-  gap: 5px;
+  border: 3px solid #fff;
 }
 
-.cell {
-  background: #333;
-  border: 2px solid #555;
-  font-size: 60px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
+  const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Paddle
+const paddleHeight = 100;
+const paddleWidth = 10;
+
+// Player paddle
+let playerY = canvas.height / 2 - paddleHeight / 2;
+
+// AI paddle
+let aiY = canvas.height / 2 - paddleHeight / 2;
+
+// Ball
+let ballX = canvas.width / 2;
+let ballY = canvas.height / 2;
+let ballSize = 10;
+let ballSpeedX = 5;
+let ballSpeedY = 4;
+
+// Draw rectangle
+function drawRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
 }
 
-.cell:hover {
-  background: #444;
+// Draw ball
+function drawBall() {
+  ctx.fillStyle = "white";
+  ctx.fillRect(ballX, ballY, ballSize, ballSize);
 }
 
-#reset {
-  margin-top: 20px;
-  padding: 10px 20px;
-  font-size: 18px;
-}
+// Game loop
+function update() {
+  // Move ball
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
 
-const game = document.getElementById("game");
-const resetBtn = document.getElementById("reset");
-
-let board = ["", "", "", "", "", "", "", "", ""];
-let currentPlayer = "X";
-let gameOver = false;
-
-// Create the board
-function createBoard() {
-  game.innerHTML = "";
-  board.forEach((cell, index) => {
-    const div = document.createElement("div");
-    div.classList.add("cell");
-    div.dataset.index = index;
-    div.innerText = cell;
-    div.addEventListener("click", handleMove);
-    game.appendChild(div);
-  });
-}
-
-// Handle moves
-function handleMove(e) {
-  const index = e.target.dataset.index;
-
-  if (board[index] !== "" || gameOver) return;
-
-  board[index] = currentPlayer;
-  e.target.innerText = currentPlayer;
-
-  if (checkWin()) {
-    alert(currentPlayer + " wins!");
-    gameOver = true;
-    return;
-  }
-  if (!board.includes("")) {
-    alert("It's a draw!");
-    gameOver = true;
-    return;
+  // Ball bounce off top/bottom
+  if (ballY <= 0 || ballY + ballSize >= canvas.height) {
+    ballSpeedY = -ballSpeedY;
   }
 
-  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  // Ball bounce off player paddle
+  if (ballX <= paddleWidth &&
+      ballY + ballSize >= playerY &&
+      ballY <= playerY + paddleHeight) {
+    ballSpeedX = -ballSpeedX;
+  }
+
+  // Ball bounce off AI paddle
+  if (ballX + ballSize >= canvas.width - paddleWidth &&
+      ballY + ballSize >= aiY &&
+      ballY <= aiY + paddleHeight) {
+    ballSpeedX = -ballSpeedX;
+  }
+
+  // Reset ball if missed
+  if (ballX < 0 || ballX > canvas.width) {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+  }
+
+  // AI paddle follows ball
+  if (aiY + paddleHeight / 2 < ballY) aiY += 4;
+  if (aiY + paddleHeight / 2 > ballY) aiY -= 4;
 }
 
-// Check for a winner
-function checkWin() {
-  const winPatterns = [
-    [0,1,2], [3,4,5], [6,7,8], // rows
-    [0,3,6], [1,4,7], [2,5,8], // cols
-    [0,4,8], [2,4,6]           // diagonals
-  ];
+// Draw everything
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  return winPatterns.some(pattern =>
-    pattern.every(i => board[i] === currentPlayer)
-  );
+  // Player paddle
+  drawRect(0, playerY, paddleWidth, paddleHeight, "white");
+
+  // AI paddle
+  drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, "white");
+
+  // Ball
+  drawBall();
 }
 
-resetBtn.addEventListener("click", () => {
-  board = ["","","","","","","","",""];
-  currentPlayer = "X";
-  gameOver = false;
-  createBoard();
+// Loop
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+
+// Controls
+document.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  playerY = e.clientY - rect.top - paddleHeight / 2;
 });
 
-// Start game
-createBoard();
+</body>
+</html>
 
-  
+
 
